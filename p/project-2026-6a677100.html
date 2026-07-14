@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Обратная связь — дашборд</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#fff; --ink:#1a2230; --muted:#5b6676;
+    --line:#e5e9f2; --accent:#2f6bff; --good:#1a9e5f; --warn:#e6a100;
+    --bad:#e04545; --chip:#eef2fb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",system-ui,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.45}
+  .wrap{max-width:1120px;margin:0 auto;padding:24px 18px 60px}
+  h1{font-size:24px;margin:0 0 2px}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:18px}
+  .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+  .tab{padding:9px 16px;border:1px solid var(--line);background:var(--card);
+    border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;
+    color:var(--muted)}
+  .tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .intro{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:18px 20px;margin-bottom:16px}
+  .intro h2{margin:0 0 8px;font-size:19px}
+  .intro p{margin:0 0 10px;color:var(--muted);font-size:14px}
+  .intro ul{margin:0;padding-left:20px}
+  .intro li{margin:5px 0;font-size:14px}
+  .intro b{color:var(--ink)}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    gap:14px}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:16px 18px;cursor:pointer;transition:box-shadow .15s,border-color .15s;
+    text-align:left;display:flex;flex-direction:column;gap:8px}
+  .tile:hover{border-color:var(--accent);box-shadow:0 4px 16px rgba(47,107,255,.12)}
+  .tile .t-name{font-size:16px;font-weight:700}
+  .tile .t-year{color:var(--muted);font-weight:500;font-size:13px}
+  .tile .t-idx{font-size:26px;font-weight:700;color:var(--good)}
+  .tile .t-idx .u{font-size:13px;color:var(--muted);font-weight:500}
+  .tile .t-stats{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);
+    font-size:13px;border-top:1px solid var(--line);padding-top:8px}
+  .tile .t-stats b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .tile .t-open{color:var(--accent);font-size:13px;font-weight:600;margin-top:2px}
+  .tile.compare{background:linear-gradient(180deg,#f2f6ff,#fff)}
+  .tile.compare .t-idx{color:var(--accent)}
+  .backbar{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .backbar button{padding:8px 14px;border:1px solid var(--line);
+    background:var(--card);border-radius:9px;cursor:pointer;font-size:14px;
+    font-weight:600;color:var(--accent)}
+  .backbar button:hover{border-color:var(--accent)}
+  .backbar h2{margin:0;font-size:20px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
+    margin-bottom:18px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:14px 16px}
+  .kpi .v{font-size:28px;font-weight:700}
+  .kpi .l{color:var(--muted);font-size:13px;margin-top:2px}
+  .kpi .v.good{color:var(--good)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:16px 18px;margin-bottom:14px}
+  .card h3{margin:0 0 12px;font-size:15px}
+  .card.full{grid-column:1 / -1}
+  .bar-row{display:flex;align-items:center;gap:10px;margin:5px 0;font-size:13px}
+  .bar-row .lbl{width:240px;flex:none;color:var(--ink);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bar-row .lbl .sub2{font-size:11px;color:var(--muted);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .bar-track{flex:1;background:var(--chip);border-radius:6px;height:20px;
+    position:relative;overflow:hidden}
+  .bar-fill{height:100%;border-radius:6px;background:var(--accent)}
+  .bar-row .val{width:78px;flex:none;text-align:right;color:var(--muted);
+    font-variant-numeric:tabular-nums}
+  .legend{display:flex;gap:16px;font-size:13px;color:var(--muted);
+    margin-bottom:8px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;
+    margin-right:5px;vertical-align:middle}
+  .muted{color:var(--muted)}
+  .na{color:var(--warn);font-size:12px}
+  .comments{max-height:520px;overflow:auto}
+  .cm{border-bottom:1px solid var(--line);padding:9px 2px;font-size:13px}
+  .cm:last-child{border-bottom:none}
+  .cm .meta{color:var(--muted);font-size:12px;margin-bottom:2px}
+  .cm.neg{background:#fdf1f1;border-radius:8px;padding:9px 10px;
+    border-bottom:1px solid #f6d9d9}
+  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;
+    background:var(--chip);color:var(--muted);margin-left:6px}
+  .pill.neg{background:#fbe0e0;color:var(--bad)}
+  .pill.th{background:#eaf0ff;color:#2f4fbf}
+  .pill.se{background:#eef7f0;color:#1a7d4b}
+  .trow{padding:7px 0;border-bottom:1px solid var(--line)}
+  .trow:last-child{border-bottom:none}
+  .trow .thead{display:flex;justify-content:space-between;align-items:center}
+  .trow .tname{font-weight:600;font-size:14px}
+  .trow .tcnt{font-weight:700;min-width:26px;text-align:center;border-radius:20px;
+    padding:1px 9px;font-size:13px}
+  .trow.good .tcnt{background:#e7f6ee;color:var(--good)}
+  .trow.bad .tcnt{background:#fdecec;color:var(--bad)}
+  .trow .tex{font-size:12px;color:var(--muted);margin-top:3px;font-style:italic}
+  .cm .dc{font-size:12px;color:#2f6bff;margin:2px 0}
+  .cm .ses{font-size:12px;color:var(--muted);margin-top:5px}
+  .ctrls{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .ctrls input,.ctrls select{padding:7px 10px;border:1px solid var(--line);
+    border-radius:8px;font-size:13px}
+  .ctrls label{font-size:13px;color:var(--muted);display:flex;
+    align-items:center;gap:6px}
+  table.cmp{border-collapse:collapse;width:100%;font-size:13px}
+  table.cmp th,table.cmp td{border:1px solid var(--line);padding:7px 10px;
+    text-align:center;font-variant-numeric:tabular-nums}
+  table.cmp th{background:var(--chip);color:var(--muted);font-weight:600}
+  table.cmp td:first-child,table.cmp th:first-child{text-align:left}
+  table.cmp td.g{background:#e7f6ee;color:var(--good);font-weight:600}
+  table.cmp td.w{background:#fdf6e3;color:#b07d00;font-weight:600}
+  table.cmp td.b{background:#fdecec;color:var(--bad);font-weight:600}
+  table.cmp .up{color:var(--good);font-weight:700}
+  table.cmp .down{color:var(--bad);font-weight:700}
+  svg{max-width:100%;height:auto;display:block}
+  @media(max-width:820px){.kpis{grid-template-columns:repeat(2,1fr)}
+    .grid{grid-template-columns:1fr}.bar-row .lbl{width:130px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 onclick="goHome()" style="cursor:pointer">Обратная связь по программам</h1>
+  <div class="sub">Аналитика ответов анкет. Имена участников обезличены, преподаватели - инициалами.</div>
+  <div id="app"></div>
+</div>
+
+<script id="data" type="application/json">{"programs": [{"name": "Проектный интенсив 2026", "year": 2026, "group": "Проектный интенсив", "scale_max": 5, "summary_pct": {"Индекс (впечатление)": 89.5, "Организация": null, "Волонтёры": null, "Питание": 91.1, "Мероприятия": null}, "n_respondents": 65, "dates": ["2026-07-06", "2026-07-07", "2026-07-11", "2026-07-12", "2026-07-13"], "by_date": {"2026-07-06": 16, "2026-07-07": 11, "2026-07-11": 9, "2026-07-12": 7, "2026-07-13": 22}, "by_track": {}, "tracks_detail": [], "satisfaction_pct": 89.5, "categories": {"Питание": {"Ужин": {"n": 52, "na": 13, "mean": 4.33, "scale": 5, "pct_top": 53.8, "pct_low": 1.9}, "Обед": {"n": 65, "na": 0, "mean": 4.54, "scale": 5, "pct_top": 64.6, "pct_low": 0.0}, "Завтрак": {"n": 53, "na": 12, "mean": 4.79, "scale": 5, "pct_top": 83.0, "pct_low": 0.0}}, "Образование": {"Лекции": {"n": 38, "na": 0, "mean": 4.29, "scale": 5, "pct_top": 52.6, "pct_low": 2.6}, "Работа в команде": {"n": 65, "na": 0, "mean": 4.65, "scale": 5, "pct_top": 72.3, "pct_low": 0.0}, "Экскурсии на производство": {"n": 38, "na": 0, "mean": 4.39, "scale": 5, "pct_top": 68.4, "pct_low": 5.3}, "Работа эксперта": {"n": 65, "na": 0, "mean": 4.6, "scale": 5, "pct_top": 76.9, "pct_low": 1.5}, "Работа над проектом": {"n": 65, "na": 0, "mean": 4.66, "scale": 5, "pct_top": 70.8, "pct_low": 0.0}}, "Организация": {"Трансфер": {"n": 62, "na": 3, "mean": 4.85, "scale": 5, "pct_top": 90.3, "pct_low": 0.0}, "Организация на площадке": {"n": 65, "na": 0, "mean": 4.45, "scale": 5, "pct_top": 64.6, "pct_low": 0.0}, "Коммуникация (каналы, почта)": {"n": 65, "na": 0, "mean": 4.74, "scale": 5, "pct_top": 78.5, "pct_low": 0.0}}, "Развлечения": {"Спорт": {"n": 31, "na": 7, "mean": 4.55, "scale": 5, "pct_top": 71.0, "pct_low": 0.0}}, "Культурная программа": {"Культурная программа": {"n": 32, "na": 6, "mean": 4.41, "scale": 5, "pct_top": 68.8, "pct_low": 0.0}}, "День": {"Общее впечатление": {"n": 65, "na": 0, "mean": 4.48, "scale": 5, "pct_top": 56.9, "pct_low": 0.0}}}, "daily": {"2026-07-06": {"n": 16, "metrics": {"День / Общее впечатление": 86.2, "Образование / Среднее": 92.1, "Питание / Среднее": 91.2}, "focus": "Открытие, инструктаж по ТБ; командная работа над проектом"}, "2026-07-07": {"n": 11, "metrics": {"День / Общее впечатление": 87.3, "Образование / Среднее": 95.8, "Питание / Среднее": 87.1}, "focus": "Стажировка (измерения, материаловедение, CAE/CAD, производство); командная работа"}, "2026-07-11": {"n": 9, "metrics": {"День / Общее впечатление": 91.1, "Образование / Среднее": 90.7, "Питание / Среднее": 89.6}, "focus": "Командная работа; культурная программа (Кронштадт)"}, "2026-07-12": {"n": 7, "metrics": {"День / Общее впечатление": 91.4, "Образование / Среднее": 92.6, "Питание / Среднее": 95.2}, "focus": "Воскресенье - нет в расписании смены"}, "2026-07-13": {"n": 22, "metrics": {"День / Общее впечатление": 91.8, "Образование / Среднее": 88.9, "Питание / Среднее": 92.4}, "focus": "Командная работа над проектом; спорт"}}, "activities": [], "topics": [], "teachers": [], "session_types": [{"name": "Работа над проектом (командная)", "n": 130, "mean": 4.65}, {"name": "Стажировка (практикум с экспертами)", "n": 65, "mean": 4.6}, {"name": "Спорт", "n": 31, "mean": 4.55}, {"name": "Культурная программа (Кронштадт, кино)", "n": 32, "mean": 4.41}, {"name": "Экскурсии на производство", "n": 38, "mean": 4.39}, {"name": "Лекции", "n": 38, "mean": 4.29}], "unmatched_activities": [], "comments": [{"date": "2026-07-06", "track": null, "text": "Е. К, лучший человек на свете!", "overall": 5, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Открытие, инструктаж по ТБ; командная работа над проектом", "negative": false}, {"date": "2026-07-06", "track": null, "text": "Телеграмм как основное средство связи - проблемный. Работает только с прокси и не везде. Не всегда получается получить информацию быстро, не по вине  организаторов.  Питание хорошо, но обед и ужин отсутствует возможность выбирать. Если есть аллергия или подобное, то будет проблемно...", "overall": 5, "themes": ["Питание", "Организация и информирование"], "sentiment": "mixed", "sessions": [], "day_context": "Открытие, инструктаж по ТБ; командная работа над проектом", "negative": true}, {"date": "2026-07-06", "track": null, "text": "Все отлично", "overall": 4, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Открытие, инструктаж по ТБ; командная работа над проектом", "negative": false}, {"date": "2026-07-06", "track": null, "text": "Все отлично", "overall": 5, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Открытие, инструктаж по ТБ; командная работа над проектом", "negative": false}, {"date": "2026-07-06", "track": null, "text": "Все было классно", "overall": 5, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Открытие, инструктаж по ТБ; командная работа над проектом", "negative": false}, {"date": "2026-07-06", "track": null, "text": "Было познавательно", "overall": 4, "themes": [], "sentiment": "neutral", "sessions": [], "day_context": "Открытие, инструктаж по ТБ; командная работа над проектом", "negative": false}, {"date": "2026-07-06", "track": null, "text": "Не хватает определенности поставленной задачи и четкости в понимании организации", "overall": 3, "themes": ["Организация и информирование"], "sentiment": "neg", "sessions": [], "day_context": "Открытие, инструктаж по ТБ; командная работа над проектом", "negative": true}, {"date": "2026-07-06", "track": null, "text": "8,5/10", "overall": 4, "themes": [], "sentiment": "neutral", "sessions": [], "day_context": "Открытие, инструктаж по ТБ; командная работа над проектом", "negative": false}, {"date": "2026-07-06", "track": null, "text": "Хотелось бы, чтобы наставников хватало на все команды", "overall": 4, "themes": ["Проживание и быт", "Организация и информирование"], "sentiment": "neutral", "sessions": [], "day_context": "Открытие, инструктаж по ТБ; командная работа над проектом", "negative": false}, {"date": "2026-07-06", "track": null, "text": "Все супер", "overall": 5, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Открытие, инструктаж по ТБ; командная работа над проектом", "negative": false}, {"date": "2026-07-06", "track": null, "text": "Все очень понравилось. Интересные кейсы, общение с экспертами, условия на площадке, условия проживания и работы в целом. Спасибо за такой полезный и хороший опыт!", "overall": 5, "themes": ["Проживание и быт", "Практика, проекты, чемпионат", "Благодарность"], "sentiment": "pos", "sessions": [], "day_context": "Открытие, инструктаж по ТБ; командная работа над проектом", "negative": false}, {"date": "2026-07-06", "track": null, "text": "1) Душные аудитории нет протока воздуха", "overall": 4, "themes": ["Проживание и быт", "Комфорт аудиторий"], "sentiment": "neg", "sessions": [], "day_context": "Открытие, инструктаж по ТБ; командная работа над проектом", "negative": true}, {"date": "2026-07-06", "track": null, "text": "1. Душные аудитории нет притока воздуха  2. Не подключены мониторы  3. Нет мышек 4. Нет требуемых приложений на пк.   Пункты 2-4 можно было подготовить заранее...  5. Нет канцелярии. 6. Нет активности для участников (знакомство происходит только внутри участников команды) 7. Не закуплены запрошенные ранее позиции, которые требуются уже сейчас! Для продвижения проекта", "overall": 4, "themes": ["Проживание и быт", "Практика, проекты, чемпионат", "Оборудование и техника", "Комфорт аудиторий"], "sentiment": "neg", "sessions": [], "day_context": "Открытие, инструктаж по ТБ; командная работа над проектом", "negative": true}, {"date": "2026-07-06", "track": null, "text": "Не хватило организационной работы: информацию узнавали от других участников, персонала. Так же не хватило наставника на команду", "overall": 3, "themes": ["Организация и информирование"], "sentiment": "neutral", "sessions": [], "day_context": "Открытие, инструктаж по ТБ; командная работа над проектом", "negative": true}, {"date": "2026-07-06", "track": null, "text": "Приезжаю сюда уже второй год. Раньше мы были в палатках)  Встретил знакомых организаторов и кураторов. Приятно, когда тебя помнят. Сейчас совсем все иначе. В этот раз есть свои \"+\" и \"-\". Спасибо за мерч ИЦК очень приятный подарок. Онлайн отзыв это одно,  но лучше пообщаться лично об обратной связи. Спасибо!", "overall": 4, "themes": ["Волонтёры и кураторы", "Благодарность"], "sentiment": "pos", "sessions": [], "day_context": "Открытие, инструктаж по ТБ; командная работа над проектом", "negative": false}, {"date": "2026-07-06", "track": null, "text": "не было нормально слышно спикеров", "overall": 5, "themes": ["Лекции и подача"], "sentiment": "neutral", "sessions": [], "day_context": "Открытие, инструктаж по ТБ; командная работа над проектом", "negative": false}, {"date": "2026-07-07", "track": null, "text": "В целом все отлично, единственный неудачный момент - не все ноутбуки нормально выводят изображение на монитор через HDMI", "overall": 5, "themes": ["Оборудование и техника"], "sentiment": "pos", "sessions": [], "day_context": "Стажировка (измерения, материаловедение, CAE/CAD, производство); командная работа", "negative": false}, {"date": "2026-07-07", "track": null, "text": "Отсутствует", "overall": 5, "themes": [], "sentiment": "neutral", "sessions": [], "day_context": "Стажировка (измерения, материаловедение, CAE/CAD, производство); командная работа", "negative": false}, {"date": "2026-07-07", "track": null, "text": "Начало положено на высокой ноте", "overall": 5, "themes": [], "sentiment": "neutral", "sessions": [], "day_context": "Стажировка (измерения, материаловедение, CAE/CAD, производство); командная работа", "negative": false}, {"date": "2026-07-07", "track": null, "text": "гуд", "overall": 5, "themes": [], "sentiment": "neutral", "sessions": [], "day_context": "Стажировка (измерения, материаловедение, CAE/CAD, производство); командная работа", "negative": false}, {"date": "2026-07-07", "track": null, "text": "На данный момент все устраивает", "overall": 4, "themes": [], "sentiment": "neutral", "sessions": [], "day_context": "Стажировка (измерения, материаловедение, CAE/CAD, производство); командная работа", "negative": false}, {"date": "2026-07-07", "track": null, "text": "пока ничего)", "overall": 4, "themes": [], "sentiment": "neutral", "sessions": [], "day_context": "Стажировка (измерения, материаловедение, CAE/CAD, производство); командная работа", "negative": false}, {"date": "2026-07-07", "track": null, "text": "Все хорошо", "overall": 5, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Стажировка (измерения, материаловедение, CAE/CAD, производство); командная работа", "negative": false}, {"date": "2026-07-07", "track": null, "text": "Места не нашлось для нашей команды. Пришлось оборудовать самим.", "overall": 4, "themes": [], "sentiment": "neutral", "sessions": [], "day_context": "Стажировка (измерения, материаловедение, CAE/CAD, производство); командная работа", "negative": false}, {"date": "2026-07-07", "track": null, "text": "Все отлично", "overall": 4, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Стажировка (измерения, материаловедение, CAE/CAD, производство); командная работа", "negative": false}, {"date": "2026-07-07", "track": null, "text": "Заметное улучшение по сравнению со стажировкой в апреле 2026.", "overall": 4, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Стажировка (измерения, материаловедение, CAE/CAD, производство); командная работа", "negative": false}, {"date": "2026-07-07", "track": null, "text": "Не очень понравилась гостиница. Как вариант проживания на 2-3 дня нормально, но для длительного проживания она не подходит. Номера очень маленькие, отсутствует стол и стулья, негде позаниматься над проектом. На двоих человек один пуф. Сидеть негде. И в принципе гостиница очень \"уставшая\"", "overall": 3, "themes": ["Проживание и быт", "Практика, проекты, чемпионат"], "sentiment": "mixed", "sessions": [], "day_context": "Стажировка (измерения, материаловедение, CAE/CAD, производство); командная работа", "negative": true}, {"date": "2026-07-11", "track": null, "text": "Всё супер, хотелось бы больше практик по реверсивном у сканированию, узнать больше о сканировании, и восстановление геометрии в геомеджик", "overall": 5, "themes": ["Проживание и быт", "Практика, проекты, чемпионат"], "sentiment": "pos", "sessions": [], "day_context": "Командная работа; культурная программа (Кронштадт)", "negative": false}, {"date": "2026-07-11", "track": null, "text": "Очень разнообразная программа, не дает заскучать. Но к сожалению меня не пустили с командой на кмз (меня не внесли в список) и я его не посетила.  Касаемо обедов, за счет того что накрывают сразу - пока съедаешь салат и суп, второе остывает, макароны или рис уже есть невозможно... В первые дни выносили постепенно и оно было теплое и вкусное.", "overall": 5, "themes": ["Питание"], "sentiment": "mixed", "sessions": [], "day_context": "Командная работа; культурная программа (Кронштадт)", "negative": true}, {"date": "2026-07-11", "track": null, "text": "Смогу сформировать более полноценный отзыв позже.", "overall": 5, "themes": [], "sentiment": "neutral", "sessions": [], "day_context": "Командная работа; культурная программа (Кронштадт)", "negative": false}, {"date": "2026-07-11", "track": null, "text": "Классная насыщенная программа", "overall": 5, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Командная работа; культурная программа (Кронштадт)", "negative": false}, {"date": "2026-07-11", "track": null, "text": "Хорошие ноутбуки, но не настроены)", "overall": 4, "themes": ["Оборудование и техника"], "sentiment": "pos", "sessions": [], "day_context": "Командная работа; культурная программа (Кронштадт)", "negative": false}, {"date": "2026-07-11", "track": null, "text": "Все хорошо", "overall": 5, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Командная работа; культурная программа (Кронштадт)", "negative": false}, {"date": "2026-07-11", "track": null, "text": "Хотелось бы анонимные опросы", "overall": 4, "themes": ["Проживание и быт"], "sentiment": "neutral", "sessions": [], "day_context": "Командная работа; культурная программа (Кронштадт)", "negative": false}, {"date": "2026-07-11", "track": null, "text": "Пока не ясно", "overall": 4, "themes": [], "sentiment": "neutral", "sessions": [], "day_context": "Командная работа; культурная программа (Кронштадт)", "negative": false}, {"date": "2026-07-11", "track": null, "text": "круто", "overall": 4, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Командная работа; культурная программа (Кронштадт)", "negative": false}, {"date": "2026-07-12", "track": null, "text": "Экскурсию нам отменили, нов понедельник а не поставить оценку я не могу", "overall": 5, "themes": ["Культурная программа"], "sentiment": "neutral", "sessions": [], "day_context": "Воскресенье - нет в расписании смены", "negative": false}, {"date": "2026-07-12", "track": null, "text": "Всё очень нравится!", "overall": 5, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Воскресенье - нет в расписании смены", "negative": false}, {"date": "2026-07-12", "track": null, "text": "Все ок", "overall": 5, "themes": [], "sentiment": "neutral", "sessions": [], "day_context": "Воскресенье - нет в расписании смены", "negative": false}, {"date": "2026-07-12", "track": null, "text": ".", "overall": 5, "themes": [], "sentiment": "neutral", "sessions": [], "day_context": "Воскресенье - нет в расписании смены", "negative": false}, {"date": "2026-07-12", "track": null, "text": "Очень раздражает кирпичная крошка, которая осыпается с потолка в аудиториях. Она может стать причиной поломки техники и после нее трудно отстирываются вещи.", "overall": 4, "themes": ["Комфорт аудиторий"], "sentiment": "neg", "sessions": [], "day_context": "Воскресенье - нет в расписании смены", "negative": true}, {"date": "2026-07-12", "track": null, "text": "Большинство информации узнается не от организаторов,а от других участников. Очередь на спорт не соблюдалась, много путаницы", "overall": 3, "themes": ["Организация и информирование"], "sentiment": "neg", "sessions": [], "day_context": "Воскресенье - нет в расписании смены", "negative": true}, {"date": "2026-07-12", "track": null, "text": "Завтрак слишком вкусный", "overall": 5, "themes": ["Питание"], "sentiment": "pos", "sessions": [], "day_context": "Воскресенье - нет в расписании смены", "negative": false}, {"date": "2026-07-13", "track": null, "text": "В целом все хорошо, отдельное внимание хотелось бы уделить белому автобусу и его водителю, очень комфортное вождение и отличное состояние автобуса, ставлю «10» из «5» звезд, полностью противоположная ситуация была в субботу на экскурсии, плохое вождение водителя и такое же состояние автобуса, ставлю «2» из «5» звезд, в остальном все супер!", "overall": 5, "themes": ["Проживание и быт", "Логистика и трансфер", "Культурная программа"], "sentiment": "mixed", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": true}, {"date": "2026-07-13", "track": null, "text": "—", "overall": 5, "themes": [], "sentiment": "neutral", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": false}, {"date": "2026-07-13", "track": null, "text": "Все хорошо", "overall": 5, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": false}, {"date": "2026-07-13", "track": null, "text": "Все супер кроме трансфера, с купчино тяжко дается", "overall": 5, "themes": ["Логистика и трансфер"], "sentiment": "pos", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": false}, {"date": "2026-07-13", "track": null, "text": "в гостиннице не хвататет места и нет кондиционера", "overall": 3, "themes": ["Комфорт аудиторий"], "sentiment": "neg", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": true}, {"date": "2026-07-13", "track": null, "text": "👍", "overall": 5, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": false}, {"date": "2026-07-13", "track": null, "text": "Всё прекрасно, мне нравится👍", "overall": 5, "themes": [], "sentiment": "mixed", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": true}, {"date": "2026-07-13", "track": null, "text": "😺", "overall": 4, "themes": [], "sentiment": "neutral", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": false}, {"date": "2026-07-13", "track": null, "text": "Все просто замечательно", "overall": 5, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": false}, {"date": "2026-07-13", "track": null, "text": "Всё хорошо", "overall": 5, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": false}, {"date": "2026-07-13", "track": null, "text": "Недостаточно времени, организация слабовата", "overall": 4, "themes": ["Организация и информирование"], "sentiment": "neg", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": true}, {"date": "2026-07-13", "track": null, "text": "Все отлично, но нужно проработать разделение ролей в команде", "overall": 4, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": false}, {"date": "2026-07-13", "track": null, "text": "Трансфер удобен только тем, кто живёт в гостинице.Мне, лично, абсолютно не удобно добираться с юга (50 минут на автобусе от пр. Ветеранов и 50 минут в метро и 15 минут пешком до развозки) до развозки,но из-за неимения лучшей альтернативы,приходится ей пользоваться.Телеграмм не самая удобная площадка для быстрого реагирования,особенно в условиях белых списков,которые в мой районе включают довольно часто.В остальном я всем довольна.Спасибо вам большое за такую потрясающую возможность!", "overall": 5, "themes": ["Проживание и быт", "Логистика и трансфер", "Организация и информирование", "Благодарность"], "sentiment": "pos", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": false}, {"date": "2026-07-13", "track": null, "text": "Все отлично!", "overall": 5, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": false}, {"date": "2026-07-13", "track": null, "text": ".", "overall": 5, "themes": [], "sentiment": "neutral", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": false}, {"date": "2026-07-13", "track": null, "text": "все кайф☺️", "overall": 5, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": false}, {"date": "2026-07-13", "track": null, "text": ".", "overall": 3, "themes": [], "sentiment": "neutral", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": true}, {"date": "2026-07-13", "track": null, "text": "-", "overall": 4, "themes": [], "sentiment": "neutral", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": false}, {"date": "2026-07-13", "track": null, "text": "крута", "overall": 5, "themes": [], "sentiment": "neutral", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": false}, {"date": "2026-07-13", "track": null, "text": "обеды стали невкусные и маленькие😔", "overall": 4, "themes": ["Питание"], "sentiment": "mixed", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": true}, {"date": "2026-07-13", "track": null, "text": "Мне всё нравится", "overall": 5, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": false}, {"date": "2026-07-13", "track": null, "text": "👍", "overall": 5, "themes": [], "sentiment": "pos", "sessions": [], "day_context": "Командная работа над проектом; спорт", "negative": false}], "comment_themes": [{"theme": "Проживание и быт", "mentions": 9, "positive": 4, "problem": 4, "ex_pos": ["Интересные кейсы, общение с экспертами, условия на площадке, условия проживания и работы в целом", "Не очень понравилась гостиница", "Всё супер, хотелось бы больше практик по реверсивном у сканированию, узнать больше о сканировании, и восстановление геометрии в геомеджик", "В целом все хорошо, отдельное внимание хотелось бы уделить белому автобусу и его водителю, очень комфортное вождение и отличное состояние автобуса, ставлю «1…"], "ex_neg": ["1) Душные аудитории нет протока воздуха", "Душные аудитории нет притока воздуха  2", "Как вариант проживания на 2-3 дня нормально, но для длительного проживания она не подходит", "В целом все хорошо, отдельное внимание хотелось бы уделить белому автобусу и его водителю, очень комфортное вождение и отличное состояние автобуса, ставлю «1…"]}, {"theme": "Организация и информирование", "mentions": 7, "positive": 0, "problem": 4, "ex_pos": [], "ex_neg": ["Телеграмм как основное средство связи - проблемный", "Не хватает определенности поставленной задачи и четкости в понимании организации", "Очередь на спорт не соблюдалась, много путаницы", "Недостаточно времени, организация слабовата"]}, {"theme": "Питание", "mentions": 4, "positive": 4, "problem": 3, "ex_pos": ["Питание хорошо, но обед и ужин отсутствует возможность выбирать", "В первые дни выносили постепенно и оно было теплое и вкусное", "Завтрак слишком вкусный", "обеды стали невкусные и маленькие😔"], "ex_neg": ["Если есть аллергия или подобное, то будет проблемно", "Касаемо обедов, за счет того что накрывают сразу - пока съедаешь салат и суп, второе остывает, макароны или рис уже есть невозможно", "обеды стали невкусные и маленькие😔"]}, {"theme": "Практика, проекты, чемпионат", "mentions": 4, "positive": 2, "problem": 0, "ex_pos": ["Интересные кейсы, общение с экспертами, условия на площадке, условия проживания и работы в целом", "Всё супер, хотелось бы больше практик по реверсивном у сканированию, узнать больше о сканировании, и восстановление геометрии в геомеджик"], "ex_neg": []}, {"theme": "Комфорт аудиторий", "mentions": 4, "positive": 0, "problem": 4, "ex_pos": [], "ex_neg": ["1) Душные аудитории нет протока воздуха", "Душные аудитории нет притока воздуха  2", "Очень раздражает кирпичная крошка, которая осыпается с потолка в аудиториях", "в гостиннице не хвататет места и нет кондиционера"]}, {"theme": "Благодарность", "mentions": 3, "positive": 3, "problem": 0, "ex_pos": ["Спасибо за такой полезный и хороший опыт", "Спасибо за мерч ИЦК очень приятный подарок", "Спасибо вам большое за такую потрясающую возможность"], "ex_neg": []}, {"theme": "Оборудование и техника", "mentions": 3, "positive": 2, "problem": 0, "ex_pos": ["В целом все отлично, единственный неудачный момент - не все ноутбуки нормально выводят изображение на монитор через HDMI", "Хорошие ноутбуки, но не настроены)"], "ex_neg": []}, {"theme": "Логистика и трансфер", "mentions": 3, "positive": 3, "problem": 1, "ex_pos": ["В целом все хорошо, отдельное внимание хотелось бы уделить белому автобусу и его водителю, очень комфортное вождение и отличное состояние автобуса, ставлю «1…", "Все супер кроме трансфера, с купчино тяжко дается", "Ветеранов и 50 минут в метро и 15 минут пешком до развозки) до развозки,но из-за неимения лучшей альтернативы,приходится ей пользоваться"], "ex_neg": ["В целом все хорошо, отдельное внимание хотелось бы уделить белому автобусу и его водителю, очень комфортное вождение и отличное состояние автобуса, ставлю «1…"]}, {"theme": "Культурная программа", "mentions": 2, "positive": 1, "problem": 1, "ex_pos": ["В целом все хорошо, отдельное внимание хотелось бы уделить белому автобусу и его водителю, очень комфортное вождение и отличное состояние автобуса, ставлю «1…"], "ex_neg": ["В целом все хорошо, отдельное внимание хотелось бы уделить белому автобусу и его водителю, очень комфортное вождение и отличное состояние автобуса, ставлю «1…"]}, {"theme": "Волонтёры и кураторы", "mentions": 1, "positive": 0, "problem": 0, "ex_pos": [], "ex_neg": []}, {"theme": "Лекции и подача", "mentions": 1, "positive": 0, "problem": 0, "ex_pos": [], "ex_neg": []}], "n_comments": 65, "n_negative_comments": 15}]}</script>
+<script>
+const DATA = JSON.parse(document.getElementById('data').textContent);
+let current = 0;
+
+const COL = {accent:'#2f6bff', good:'#1a9e5f', warn:'#e6a100', bad:'#e04545',
+             c3:'#8b5cf6'};
+
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,
+  c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+function color(mean, max){
+  const r = mean/max;
+  if(r>=0.85) return COL.good;
+  if(r>=0.6)  return COL.warn;
+  return COL.bad;
+}
+
+// Горизонтальные бары для средних по метрикам.
+function barBlock(items, max){
+  return items.map(it=>{
+    const sc = it.scale || max;
+    const pct = it.mean==null?0:(it.mean/sc*100);
+    const na = it.na? ` <span class="na">не был: ${it.na}</span>`:'';
+    const sub = it.sub? `<div class="sub2" title="${esc(it.sub)}">${esc(it.sub)}</div>`:'';
+    const val = it.mean==null?'—':(sc!==max?`${it.mean}/${sc}`:`${it.mean}`);
+    return `<div class="bar-row">
+      <div class="lbl" title="${esc(it.label)}">${esc(it.label)}${sub}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;
+        background:${it.mean==null?'#ccc':color(it.mean,sc)}"></div></div>
+      <div class="val">${val} <span class="muted">(${it.n})</span>${na}</div>
+    </div>`;
+  }).join('');
+}
+
+// Линейный график динамики по дням (SVG).
+function lineChart(dates, series, yMax){
+  const W=640, H=260, pad={l:34,r:12,t:14,b:46};
+  const iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
+  const n=dates.length;
+  const x=i=> n<=1? pad.l+iw/2 : pad.l + iw*i/(n-1);
+  const y=v=> pad.t + ih*(1 - v/yMax);
+  let g='';
+  // сетка по Y
+  const steps=5;
+  for(let s=0;s<=steps;s++){
+    const val=yMax*s/steps, yy=y(val);
+    g+=`<line x1="${pad.l}" y1="${yy}" x2="${W-pad.r}" y2="${yy}"
+      stroke="#eef1f7"/>`;
+    g+=`<text x="${pad.l-6}" y="${yy+4}" text-anchor="end" font-size="10"
+      fill="#8a94a6">${val.toFixed(0)}</text>`;
+  }
+  // подписи дат
+  dates.forEach((d,i)=>{
+    const lbl=d.slice(5); // MM-DD
+    g+=`<text x="${x(i)}" y="${H-pad.b+16}" text-anchor="end" font-size="10"
+      fill="#8a94a6" transform="rotate(-40 ${x(i)} ${H-pad.b+16})">${lbl}</text>`;
+  });
+  series.forEach(s=>{
+    let pts=[];
+    s.data.forEach((v,i)=>{ if(v!=null) pts.push([x(i),y(v)]); });
+    if(!pts.length) return;
+    const dstr=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+    g+=`<path d="${dstr}" fill="none" stroke="${s.color}" stroke-width="2.2"/>`;
+    pts.forEach(p=> g+=`<circle cx="${p[0]}" cy="${p[1]}" r="3"
+      fill="${s.color}"/>`);
+  });
+  return `<svg viewBox="0 0 ${W} ${H}">${g}</svg>`;
+}
+
+function legend(series){
+  return '<div class="legend">'+series.map(s=>
+    `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('')+'</div>';
+}
+
+function renderProgram(p){
+  const max=p.scale_max;
+  let h='';
+
+  // KPI
+  h+=`<div class="kpis">
+    <div class="kpi"><div class="v">${p.n_respondents}</div><div class="l">ответов</div></div>
+    <div class="kpi"><div class="v good">${p.satisfaction_pct??'—'}%</div><div class="l">индекс удовлетворённости</div></div>
+    <div class="kpi"><div class="v">${p.dates.length}</div><div class="l">дней наблюдений</div></div>
+    <div class="kpi"><div class="v">${p.n_comments}</div><div class="l">комментариев (− ${p.n_negative_comments})</div></div>
+  </div>`;
+
+  // Сравнение треков
+  if(p.tracks_detail && p.tracks_detail.length>1){
+    const rows=p.tracks_detail;
+    const cols=[['satisfaction','Индекс, %'],['overall','Впечатление'],
+      ['organization','Организация'],['volunteers','Волонтёры'],
+      ['food','Питание'],['activities','Мероприятия']];
+    let t='<table class="cmp"><thead><tr><th>Трек</th><th>Ответов</th>'+
+      cols.map(c=>`<th>${c[1]}</th>`).join('')+'</tr></thead><tbody>';
+    rows.forEach(r=>{
+      t+=`<tr><td>${esc(r.track)}</td><td>${r.n}</td>`+
+        cols.map(c=>{
+          const v=r[c[0]];
+          if(v==null) return '<td>—</td>';
+          const cl=c[0]==='satisfaction'?'':
+            (v/max>=0.85?'g':v/max>=0.6?'w':'b');
+          return `<td class="${cl}">${v}</td>`;
+        }).join('')+'</tr>';
+    });
+    t+='</tbody></table>';
+    h+=`<div class="card full"><h3>Сравнение треков</h3>
+      <div class="muted" style="font-size:12px;margin-bottom:8px">Средние оценки по трекам (шкала 1–${max}). Цвет — уровень оценки.</div>
+      <div style="overflow-x:auto">${t}</div></div>`;
+  }
+
+  h+='<div class="grid">';
+
+  // Динамика по дням
+  const dates=Object.keys(p.daily).sort();
+  const keys=new Set(); dates.forEach(d=>Object.keys(p.daily[d].metrics).forEach(k=>keys.add(k)));
+  const palette=[COL.accent,COL.good,COL.warn,COL.c3];
+  const series=[...keys].map((k,i)=>({name:k,color:palette[i%palette.length],
+    data:dates.map(d=>p.daily[d].metrics[k]??null)}));
+  h+=`<div class="card full"><h3>Динамика по дням</h3>
+    <div class="muted" style="font-size:12px;margin-bottom:6px">В процентах от шкалы (чтобы разные шкалы были сопоставимы).</div>
+    ${legend(series)}${lineChart(dates,series,100)}</div>`;
+
+  // Разметка дней по расписанию (типы занятий по дням)
+  const hasFocus=dates.some(d=>p.daily[d].focus);
+  if(hasFocus){
+    let t='<table class="cmp"><thead><tr><th>Дата</th><th>Ответов</th>'+
+      '<th>Что было по расписанию</th></tr></thead><tbody>';
+    dates.forEach(d=>{
+      t+=`<tr><td>${d}</td><td>${p.daily[d].n}</td>`+
+        `<td style="text-align:left">${esc(p.daily[d].focus||'—')}</td></tr>`;
+    });
+    t+='</tbody></table>';
+    h+=`<div class="card full"><h3>Дни смены</h3>
+      <div style="overflow-x:auto">${t}</div></div>`;
+  }
+
+  // Ключевые метрики (День)
+  if(p.categories['День']){
+    const items=Object.entries(p.categories['День']).map(([m,s])=>
+      ({label:m,mean:s.mean,n:s.n,na:s.na,scale:s.scale}));
+    h+=`<div class="card"><h3>Оценка дня</h3>${barBlock(items,max)}</div>`;
+  }
+  // Питание
+  if(p.categories['Питание']){
+    const order=['Завтрак','Обед','Ужин'];
+    const items=order.filter(m=>p.categories['Питание'][m]).map(m=>{
+      const s=p.categories['Питание'][m];return{label:m,mean:s.mean,n:s.n,na:s.na,scale:s.scale};});
+    h+=`<div class="card"><h3>Питание</h3>${barBlock(items,max)}</div>`;
+  }
+  // Образование / Организация
+  ['Образование','Организация','Культурная программа','Развлечения'].forEach(cat=>{
+    if(p.categories[cat]){
+      const items=Object.entries(p.categories[cat]).map(([m,s])=>
+        ({label:m,mean:s.mean,n:s.n,na:s.na,scale:s.scale})).sort((a,b)=>(b.mean||0)-(a.mean||0));
+      h+=`<div class="card"><h3>${esc(cat)}</h3>${barBlock(items,max)}</div>`;
+    }
+  });
+
+  // Рейтинг преподавателей (если есть справочник)
+  if(p.teachers && p.teachers.length){
+    const items=p.teachers.map(t=>({label:t.name,mean:t.mean,n:t.n,na:0,
+      sub:t.topics.join(' · ')}));
+    h+=`<div class="card full"><h3>Рейтинг преподавателей</h3>
+      <div class="muted" style="font-size:12px;margin-bottom:8px">Оценка сессий, которые вёл человек. Рус. и англ. версии одной сессии объединены.</div>
+      ${barBlock(items,max)}</div>`;
+  }
+
+  // Рейтинг тем (с преподавателями)
+  if(p.topics && p.topics.length){
+    const items=p.topics.map(t=>({label:t.name,mean:t.mean,n:t.n,na:0,
+      sub:(t.track?('['+t.track+'] '):'')+(t.teachers.join(', ')||'без лектора')}));
+    h+=`<div class="card full"><h3>Рейтинг тем</h3>${barBlock(items,max)}</div>`;
+  }
+
+  // Рейтинг по типам занятий (программы без именных сессий)
+  if(p.session_types && p.session_types.length){
+    const items=p.session_types.map(t=>({label:t.name,mean:t.mean,n:t.n,na:0}));
+    h+=`<div class="card full"><h3>Рейтинг по типам занятий</h3>
+      <div class="muted" style="font-size:12px;margin-bottom:8px">Оценки по видам занятий из расписания (без привязки к конкретным экспертам — в программе они не именные).</div>
+      ${barBlock(items,max)}</div>`;
+  }
+
+  // Рейтинг мероприятий (сырой, если справочника нет)
+  if((!p.topics||!p.topics.length) && p.activities && p.activities.length){
+    const top=p.activities.slice(0,8);
+    const bottom=p.activities.slice(-8).reverse();
+    h+=`<div class="card full"><h3>Мероприятия — выше всего</h3>
+      ${barBlock(top.map(a=>({label:a.name,mean:a.mean,n:a.n,na:0})),max)}</div>`;
+    h+=`<div class="card full"><h3>Мероприятия — ниже всего</h3>
+      ${barBlock(bottom.map(a=>({label:a.name,mean:a.mean,n:a.n,na:0})),max)}</div>`;
+  }
+
+  h+='</div>'; // grid
+
+  // Облако тем комментариев: что хорошо / на что обратить внимание
+  if(p.comment_themes && p.comment_themes.length){
+    const good=[...p.comment_themes].filter(t=>t.positive>0)
+      .sort((a,b)=>b.positive-a.positive).slice(0,7);
+    const bad=[...p.comment_themes].filter(t=>t.problem>0)
+      .sort((a,b)=>b.problem-a.problem).slice(0,8);
+    const row=(t,kind)=>{
+      const ex=kind==='good'?(t.ex_pos[0]||''):(t.ex_neg[0]||'');
+      const cnt=kind==='good'?t.positive:t.problem;
+      return `<div class="trow ${kind}">
+        <div class="thead"><span class="tname">${esc(t.theme)}</span>
+          <span class="tcnt">${cnt}</span></div>
+        ${ex?`<div class="tex">«${esc(ex)}»</div>`:''}</div>`;
+    };
+    h+=`<div class="grid">
+      <div class="card"><h3>Что хорошо</h3>
+        <div class="muted" style="font-size:12px;margin-bottom:8px">Темы, которые чаще всего хвалят (число положительных упоминаний).</div>
+        ${good.map(t=>row(t,'good')).join('')||'<div class="muted">—</div>'}</div>
+      <div class="card"><h3>На что обратить внимание</h3>
+        <div class="muted" style="font-size:12px;margin-bottom:8px">Темы с проблемными упоминаниями (число сигналов).</div>
+        ${bad.map(t=>row(t,'bad')).join('')||'<div class="muted">—</div>'}</div>
+    </div>`;
+  }
+
+  // Комментарии - умный список с фильтром по теме и привязкой к сессиям
+  const topts=(p.comment_themes||[]).map(t=>
+    `<option value="${esc(t.theme)}">${esc(t.theme)} (${t.mentions})</option>`).join('');
+  h+=`<div class="card full"><h3>Комментарии (${p.n_comments})</h3>
+    <div class="ctrls">
+      <input id="cq" placeholder="поиск по тексту…" oninput="filterComments()">
+      <select id="ctheme" onchange="filterComments()"><option value="">все темы</option>${topts}</select>
+      <label><input type="checkbox" id="cneg" onchange="filterComments()"> только проблемные</label>
+    </div>
+    <div class="comments" id="comments"></div></div>`;
+
+  return h;
+}
+
+// Сравнение программ одной группы по годам
+function renderCompare(progs){
+  const rows=progs.slice().sort((a,b)=>(a.year||0)-(b.year||0));
+  const metrics=["Индекс (впечатление)","Организация","Волонтёры","Питание","Мероприятия"];
+  const cell=v=>{
+    if(v==null) return '<td>—</td>';
+    const cl=v>=85?'g':v>=60?'w':'b';
+    return `<td class="${cl}">${v}%</td>`;
+  };
+  let h='';
+  // KPI-плитки по годам
+  h+='<div class="kpis">'+rows.map(p=>
+    `<div class="kpi"><div class="v">${p.summary_pct["Индекс (впечатление)"]??'—'}%</div>
+     <div class="l">${esc(p.name)} · ${p.n_respondents} ответов</div></div>`).join('')+'</div>';
+
+  // таблица динамики
+  let t='<table class="cmp"><thead><tr><th>Показатель</th>'+
+    rows.map(p=>`<th>${p.year||esc(p.name)}</th>`).join('')+
+    (rows.length===2?'<th>Δ</th>':'')+'</tr></thead><tbody>';
+  t+=`<tr><td>Ответов</td>`+rows.map(p=>`<td>${p.n_respondents}</td>`).join('')+
+     (rows.length===2?'<td>—</td>':'')+'</tr>';
+  metrics.forEach(m=>{
+    const vals=rows.map(p=>p.summary_pct[m]);
+    let delta='—';
+    if(rows.length===2 && vals[0]!=null && vals[1]!=null){
+      const d=Math.round((vals[1]-vals[0])*10)/10;
+      const cl=d>0?'g':d<0?'b':'';
+      delta=`<span class="${cl==='g'?'up':cl==='b'?'down':''}">${d>0?'+':''}${d}</span>`;
+    }
+    t+=`<tr><td>${esc(m)}</td>`+vals.map(cell).join('')+
+       (rows.length===2?`<td>${delta}</td>`:'')+'</tr>';
+  });
+  t+='</tbody></table>';
+  h+=`<div class="card full"><h3>Динамика по годам</h3>
+    <div class="muted" style="font-size:12px;margin-bottom:8px">Все показатели — в процентах от своей шкалы (сопоставимо между годами). Δ — изменение последнего года к первому, в процентных пунктах.</div>
+    <div style="overflow-x:auto">${t}</div></div>`;
+
+  // Динамика по темам (совпадающие темы год к году)
+  const yr=rows.map(p=>p.year);
+  const topicByYear={};  // название темы -> {year: mean}
+  rows.forEach(p=>(p.topics||[]).forEach(tp=>{
+    (topicByYear[tp.name]=topicByYear[tp.name]||{})[p.year]=tp.mean;
+  }));
+  const shared=Object.entries(topicByYear)
+    .filter(([n,by])=>Object.keys(by).length>1)
+    .sort((a,b)=>((b[1][yr[yr.length-1]]||0)-(a[1][yr[yr.length-1]]||0)));
+  if(shared.length){
+    let tt='<table class="cmp"><thead><tr><th>Тема</th>'+
+      yr.map(y=>`<th>${y}</th>`).join('')+(yr.length===2?'<th>Δ</th>':'')+
+      '</tr></thead><tbody>';
+    shared.forEach(([n,by])=>{
+      const vals=yr.map(y=>by[y]);
+      let d='—';
+      if(yr.length===2&&vals[0]!=null&&vals[1]!=null){
+        const dd=Math.round((vals[1]-vals[0])*100)/100;
+        d=`<span class="${dd>0?'up':dd<0?'down':''}">${dd>0?'+':''}${dd}</span>`;
+      }
+      tt+=`<tr><td style="text-align:left">${esc(n)}</td>`+
+        vals.map(v=>v==null?'<td>—</td>':`<td>${v}</td>`).join('')+
+        (yr.length===2?`<td>${d}</td>`:'')+'</tr>';
+    });
+    tt+='</tbody></table>';
+    h+=`<div class="card full"><h3>Темы: динамика по годам</h3>
+      <div class="muted" style="font-size:12px;margin-bottom:8px">Средняя оценка темы (шкала 1–10) в годах, где она была. Только темы, встречавшиеся в нескольких годах.</div>
+      <div style="overflow-x:auto">${tt}</div></div>`;
+  }
+  return h;
+}
+
+function filterComments(){
+  if(STATE.view!=='program') return;
+  const p=DATA.programs[STATE.i];
+  const q=(document.getElementById('cq')?.value||'').toLowerCase();
+  const theme=document.getElementById('ctheme')?.value||'';
+  const negOnly=document.getElementById('cneg')?.checked;
+  const box=document.getElementById('comments');
+  const list=p.comments.filter(c=>
+    (!negOnly||c.negative) &&
+    (!theme||(c.themes||[]).includes(theme)) &&
+    (!q||c.text.toLowerCase().includes(q)));
+  box.innerHTML = list.length? list.map(c=>{
+    const ov=c.overall!=null?`<span class="pill${c.negative?' neg':''}">оценка: ${c.overall}</span>`:'';
+    const tr=c.track?`<span class="pill">${esc(c.track)}</span>`:'';
+    const th=(c.themes||[]).map(t=>`<span class="pill th">${esc(t)}</span>`).join('');
+    const dc=c.day_context?`<div class="dc">По расписанию: ${esc(c.day_context)}</div>`:'';
+    const ses=(c.sessions||[]).filter(s=>s.score!=null)
+      .map(s=>`<span class="pill se">${esc(s.name)}: ${s.score}</span>`).join('');
+    return `<div class="cm${c.negative?' neg':''}">
+      <div class="meta">${esc(c.date||'')}${tr}${ov} ${th}</div>
+      ${dc}
+      <div>${esc(c.text)}</div>
+      ${ses?`<div class="ses">Оценил(а) в этот день: ${ses}</div>`:''}
+    </div>`;
+  }).join('') : '<div class="muted" style="padding:10px">Ничего не найдено.</div>';
+}
+
+// Группы для сравнения по годам
+const GROUPS=(()=>{
+  const g={};
+  DATA.programs.forEach((p,i)=>{ if(p.group){ (g[p.group]=g[p.group]||[]).push(i); } });
+  return Object.entries(g).filter(([_,idx])=>idx.length>1)
+    .map(([name,idx])=>({name, idx}));
+})();
+
+// Основные выводы (считаются из данных)
+function computeInsights(){
+  const progs=DATA.programs;
+  const totResp=progs.reduce((s,p)=>s+p.n_respondents,0);
+  const totComm=progs.reduce((s,p)=>s+p.n_comments,0);
+  const bullets=[];
+  // сильнейшая/слабейшая общая область
+  const metrics=["Организация","Волонтёры","Питание","Мероприятия"];
+  const avg={};
+  metrics.forEach(m=>{
+    const vals=progs.map(p=>p.summary_pct&&p.summary_pct[m]).filter(v=>v!=null);
+    if(vals.length) avg[m]=Math.round(vals.reduce((a,b)=>a+b,0)/vals.length*10)/10;
+  });
+  const sorted=Object.entries(avg).sort((a,b)=>b[1]-a[1]);
+  if(sorted.length){
+    bullets.push(`Сильнее всего оценивают <b>${sorted[0][0].toLowerCase()}</b> (${sorted[0][1]}%), слабее всего — <b>${sorted[sorted.length-1][0].toLowerCase()}</b> (${sorted[sorted.length-1][1]}%).`);
+  }
+  // динамика по годам для групп
+  GROUPS.forEach(g=>{
+    const ps=g.idx.map(i=>progs[i]).filter(p=>p.year).sort((a,b)=>a.year-b.year);
+    if(ps.length>=2){
+      const a=ps[0].summary_pct["Индекс (впечатление)"], b=ps[ps.length-1].summary_pct["Индекс (впечатление)"];
+      if(a!=null&&b!=null){
+        const d=Math.round((b-a)*10)/10;
+        bullets.push(`<b>${esc(g.name)}</b>: удовлетворённость ${ps[0].year}→${ps[ps.length-1].year} ${d>=0?'выросла на +':'снизилась на '}${d} п.п. (${a}% → ${b}%).`);
+      }
+    }
+  });
+  // топ проблемная тема по всем программам
+  const probs={};
+  progs.forEach(p=>(p.comment_themes||[]).forEach(t=>{probs[t.theme]=(probs[t.theme]||0)+t.problem;}));
+  const topProb=Object.entries(probs).sort((a,b)=>b[1]-a[1])[0];
+  if(topProb&&topProb[1]>0) bullets.push(`Чаще всего в комментариях жалуются на тему <b>«${esc(topProb[0])}»</b> (${topProb[1]} сигналов).`);
+  return {totResp, totComm, bullets};
+}
+
+function tile(p,i){
+  return `<div class="tile" onclick="openProgram(${i})">
+    <div><span class="t-name">${esc(p.name.replace(/\\s*\\d{4}$/,''))}</span>
+      ${p.year?`<span class="t-year"> · ${p.year}</span>`:''}</div>
+    <div class="t-idx">${p.satisfaction_pct??'—'}<span class="u">% удовлетворённость</span></div>
+    <div class="t-stats">
+      <span>анкет: <b>${p.n_respondents}</b></span>
+      <span>дней: <b>${p.dates.length}</b></span>
+      <span>комментариев: <b>${p.n_comments}</b></span>
+    </div>
+    <div class="t-open">Открыть анализ →</div>
+  </div>`;
+}
+
+function renderHome(){
+  const ins=computeInsights();
+  const n=DATA.programs.length;
+  const pl=(n%10===1&&n%100!==11)?'программа':((n%10>=2&&n%10<=4)&&!(n%100>=12&&n%100<=14))?'программы':'программ';
+  let h=`<div class="card full intro">
+    <h2>Что анализируется</h2>
+    <p>Сейчас в дашборде ${n} ${pl}:
+       собрано <b>${ins.totResp}</b> ответов и <b>${ins.totComm}</b> текстовых комментариев.
+       Данные обезличены. Нажмите на плитку программы, чтобы открыть полный анализ.</p>
+    <ul>${ins.bullets.map(b=>`<li>${b}</li>`).join('')}</ul>
+  </div>`;
+  h+='<div class="tiles">';
+  h+=DATA.programs.map((p,i)=>tile(p,i)).join('');
+  GROUPS.forEach((g,gi)=>{
+    h+=`<div class="tile compare" onclick="openCompare(${gi})">
+      <div><span class="t-name">Сравнение по годам</span></div>
+      <div class="t-idx" style="font-size:18px">${esc(g.name)}</div>
+      <div class="t-stats"><span>${g.idx.length} года в сравнении</span></div>
+      <div class="t-open">Смотреть динамику →</div>
+    </div>`;
+  });
+  h+='</div>';
+  return h;
+}
+
+// SINGLE - режим одной программы (персональная ссылка): открываемся сразу
+// в анализ, без плиток и кнопки "все программы". В данных при этом только
+// одна программа, поэтому чужое недоступно в принципе.
+const SINGLE=true;
+let STATE=SINGLE?{view:'program',i:0}:{view:'home'};
+
+function render(){
+  const app=document.getElementById('app');
+  if(STATE.view==='home'){ app.innerHTML=renderHome(); return; }
+  const back=SINGLE?'':'<div class="backbar"><button onclick="goHome()">← Все программы</button></div>';
+  if(STATE.view==='program'){
+    app.innerHTML=back+renderProgram(DATA.programs[STATE.i]);
+    filterComments();
+  } else if(STATE.view==='compare'){
+    app.innerHTML=back+renderCompare(GROUPS[STATE.g].idx.map(i=>DATA.programs[i]));
+  }
+  window.scrollTo(0,0);
+}
+function openProgram(i){STATE={view:'program',i};render();}
+function openCompare(g){STATE={view:'compare',g};render();}
+function goHome(){STATE={view:'home'};render();}
+render();
+</script>
+</body>
+</html>
